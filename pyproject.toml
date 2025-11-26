@@ -1,0 +1,19 @@
+[project]
+name = "signtown_to_anki"
+version = "0.1.0"
+description = "このツールは [手話タウンハンドブック](https://handbook.sign.town/ja/feed?sl=JSL) の学習資料から Anki パッケージを生成します。"
+readme = "README.md"
+authors = [
+    { name = "mootah", email = "44580337+mootah@users.noreply.github.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "bs4>=0.0.2",
+    "genanki>=0.13.1",
+    "requests>=2.32.5",
+    "rich>=14.2.0",
+    "rich-click>=1.9.4",
+]
+
+[project.scripts]
+signtown_to_anki = "signtown_to_anki.main:main"
