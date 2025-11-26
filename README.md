@@ -13,6 +13,7 @@
 
 ffmpeg を使用すると動画のサイズを大幅に削減できます。
 使用しない場合、各カードの動画はおおよそ 1～5MB になりますが、使用すれば概ね ～100KB 程度になります。
+
 ## インストール
 
 uv 導入済みの環境で、以下のコマンドからインストールしてください。
@@ -26,19 +27,19 @@ uv tool install git+https://github.com/mootah/signtown_to_anki
 ### 推奨
 
 ```
-signtown_to_anki
+signtown-to-anki
 ```
 
 ### 動画をダウンロードしない
 
 ```
-signtown_to_anki --no-download
+signtown-to-anki --no-download
 ```
 
 ### 動画のダウンロードにffmpegを使わない
 
 ```
-signtown_to_anki --without-ffmpeg
+signtown-to-anki --without-ffmpeg
 ```
 
 ## 注意事項

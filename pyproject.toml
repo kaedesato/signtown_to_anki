@@ -1,5 +1,5 @@
 [project]
-name = "signtown_to_anki"
+name = "signtown-to-anki"
 version = "0.1.0"
 description = "このツールは [手話タウンハンドブック](https://handbook.sign.town/ja/feed?sl=JSL) の学習資料から Anki パッケージを生成します。"
 readme = "README.md"
@@ -16,4 +16,4 @@ dependencies = [
 ]
 
 [project.scripts]
-signtown_to_anki = "signtown_to_anki.main:main"
+signtown-to-anki = "signtown_to_anki.main:main"
