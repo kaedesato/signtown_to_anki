@@ -18,7 +18,7 @@ ffmpeg を使用すると動画のサイズを大幅に削減できます。
 uv 導入済みの環境で、以下のコマンドからインストールしてください。
 
 ```
-uv tool install <url>
+uv tool install git+https://github.com/mootah/signtown_to_anki
 ```
 
 ## 使い方
