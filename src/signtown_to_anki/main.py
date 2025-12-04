@@ -1,4 +1,6 @@
 import os, sys, json, random, time, subprocess
+import shutil
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
 from bs4 import BeautifulSoup
 import genanki
@@ -88,10 +90,11 @@ def download_video(url, filename):
     if FFMPEG:
         cmd = [
             "ffmpeg", "-i", url,
-            "-vcodec", "libx264",
-            "-crf", "28",
-            "-preset", "veryfast",
+            "-vcodec", "libwebp",
+            "-loop", "0",
             "-an",
+            "-vsync", "0",
+            "-preset", "default",
             "-loglevel", "error",
             filepath
         ]
@@ -130,6 +133,10 @@ def load_templates():
     for filename in filenames:
         filepath = os.path.join(template_path, filename)
         data = read(filepath)
+
+        if FFMPEG:
+            data = data.replace('<video src="{{video}}" controls autoplay loop></video>', '<img src="{{video}}">')
+
         key = filename.split(".")[0]
         templates[key] = data
 
@@ -150,7 +157,10 @@ def create_notes(signs: list) -> list[dict]:
         
         video_file = ""
         if DOWNLOAD:
-            video_file = f"{note_id}.mp4"
+            if FFMPEG:
+                video_file = f"{note_id}.webp"
+            else:
+                video_file = f"{note_id}.mp4"
 
         notes.append({
             "id":  note_id,
@@ -205,6 +215,7 @@ def write_in_apkg(notes: list):
             deck_id = random.randrange(1 << 30, 1 << 31)
             deck_name = f"手話タウンハンドブック::{category}"
             decks[category] = genanki.Deck(deck_id, deck_name)
+            # print(f"作成デッキ: {deck_name}")
 
         note = genanki.Note(model=model, fields=list(n.values()))
         decks[category].add_note(note)
@@ -215,14 +226,19 @@ def write_in_apkg(notes: list):
         media = []
         os.makedirs(MEDIA_PATH, exist_ok=True)
         print("動画をダウンロードしています...")
-        for n in track(notes):
-            time.sleep(0.2)
 
-            download_video(n["video_url"], n["video"])
-            filepath = f"{MEDIA_PATH}/{n["video"]}"
+        for n in notes:
+            filepath = f"{MEDIA_PATH}/{n['video']}"
             media.append(filepath)
-
         package.media_files = media
+
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            futures = [
+                executor.submit(download_video, n["video_url"], n["video"])
+                for n in notes
+            ]
+            for _ in track(as_completed(futures), total=len(futures)):
+                pass
 
     apkg_path = f"手話タウンハンドブック.apkg"
     package.write_to_file(apkg_path)
@@ -238,7 +254,16 @@ def main(**kwargs):
     global DOWNLOAD
     DOWNLOAD = not kwargs["no_download"]
     global FFMPEG
-    FFMPEG = not kwargs["without_ffmpeg"]
+
+    if kwargs["without_ffmpeg"]:
+        FFMPEG = False
+    else:
+        # Check if ffmpeg is available in the environment
+        if shutil.which("ffmpeg") is not None:
+            FFMPEG = True
+        else:
+            print("ffmpegが見つかりませんでした。動画の変換をスキップし、MP4としてダウンロードします。")
+            FFMPEG = False
 
     print("カテゴリ一覧を読み込んでいます...")
     cats = get_categories()
