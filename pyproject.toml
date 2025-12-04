@@ -17,3 +17,6 @@ dependencies = [
 
 [project.scripts]
 signtown-to-anki = "signtown_to_anki.main:main"
+
+[tool.setuptools.package-data]
+signtown_to_anki = ["**/*.css", "**/*.anki"]
