@@ -1,4 +1,5 @@
 import os, sys, json, random, time, subprocess
+import concurrent.futures
 import requests
 from bs4 import BeautifulSoup
 import genanki
@@ -203,12 +204,13 @@ def write_in_apkg(notes: list):
         media = []
         os.makedirs(MEDIA_PATH, exist_ok=True)
         print("動画をダウンロードしています...")
-        for n in track(notes):
-            time.sleep(0.2)
 
+        def download_task(n):
             download_video(n["video_url"], n["video"])
-            filepath = f"{MEDIA_PATH}/{n["video"]}"
-            media.append(filepath)
+            return f"{MEDIA_PATH}/{n['video']}"
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            media = list(track(executor.map(download_task, notes), total=len(notes)))
 
         package.media_files = media
 
