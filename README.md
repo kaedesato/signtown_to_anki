@@ -36,12 +36,6 @@ signtown-to-anki
 signtown-to-anki --no-download
 ```
 
-### 動画のダウンロードにffmpegを使わない
-
-```
-signtown-to-anki --without-ffmpeg
-```
-
 ## 注意事項
 
 - 動画のファイルサイズや再生方法は、利用する環境や設定によって変わります。
