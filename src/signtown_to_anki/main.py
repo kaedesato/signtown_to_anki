@@ -87,11 +87,10 @@ def download_video(url, filename):
 
     cmd = [
         "ffmpeg", "-i", url,
-        "-vcodec", "libvpx-vp9",
-        "-crf", "35",
+        "-vcodec", "libsvtav1",
+        "-crf", "50",
         "-b:v", "0",
-        "-cpu-used", "2",
-        "-row-mt", "1",
+        "-preset", "12",
         "-an",
         "-loglevel", "error",
         filepath
