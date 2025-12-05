@@ -172,11 +172,11 @@ def write_in_apkg(notes: list):
             {"name": "category"},
         ],
         templates=[
-            # {
-            #     "name": "JA->JSL",
-            #     "qfmt": templates["ja2jsl_front"],
-            #     "afmt": templates["ja2jsl_back"],
-            # },
+            {
+                "name": "JA->JSL",
+                "qfmt": templates["ja2jsl_front"],
+                "afmt": templates["ja2jsl_back"],
+            },
             {
                 "name": "JSL->JA",
                 "qfmt": templates["jsl2ja_front"],
