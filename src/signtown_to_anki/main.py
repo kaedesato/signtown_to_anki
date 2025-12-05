@@ -1,5 +1,6 @@
 import os, sys, json, random, time, subprocess, shutil, multiprocessing
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import requests
 import pycurl
 from bs4 import BeautifulSoup
 import genanki
