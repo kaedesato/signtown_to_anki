@@ -1,8 +1,10 @@
 import os, sys, json, random, time, subprocess
 import concurrent.futures
 import requests
+import pycurl
 from bs4 import BeautifulSoup
 import genanki
+import imageio_ffmpeg
 from rich import print
 from rich.progress import track
 import rich_click as click
@@ -21,45 +23,65 @@ def read(file_path: str) -> str:
         sys.exit(1)
 
 
-def get_categories() -> dict:
-    url = "https://handbook.sign.town/ja/collections?sl=JSL"
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-    except:
-        print("WEBページへのアクセスに失敗しました。")
-        sys.exit(1)
+def get_categories() -> list:
+    json_path = f"{config["media_path"]}/categories.json"
+
+    if os.path.exists(json_path):
+        with open(json_path, "r", encoding="utf-8") as f:
+            jsondata = json.load(f)
+    else:
+        url = "https://handbook.sign.town/ja/collections?sl=JSL"
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+        except:
+            print("WEBページへのアクセスに失敗しました。")
+            sys.exit(1)
     
-    soup = BeautifulSoup(response.text, "html.parser")
-    next_data = soup.find("script", id="__NEXT_DATA__")
+        soup = BeautifulSoup(response.text, "html.parser")
+        next_data = soup.find("script", id="__NEXT_DATA__")
 
-    if not next_data:
-        print("カテゴリリストが見つかりませんでした。")
-        sys.exit(1)
+        if not next_data:
+            print("カテゴリリストが見つかりませんでした。")
+            sys.exit(1)
 
-    jsondata = json.loads(next_data.string)
+        jsondata = json.loads(next_data.string)
+
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(jsondata, f, ensure_ascii=False, indent=2)
+
     cats = jsondata["props"]["pageProps"]["initialData"]
     
     return cats
 
 
 def get_signs_in_category(cat_id):
-    url = f"https://handbook.sign.town/ja/collections/module/{cat_id}?sl=JSL"
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-    except:
-        print("WEBページへのアクセスに失敗しました。")
-        sys.exit(1)
+    json_path = f"{config["media_path"]}/signs_{cat_id}.json"
 
-    soup = BeautifulSoup(response.text, "html.parser")
-    next_data = soup.find("script", id="__NEXT_DATA__")
+    if os.path.exists(json_path):
+        with open(json_path, "r", encoding="utf-8") as f:
+            jsondata = json.load(f)
+    else:
+        url = f"https://handbook.sign.town/ja/collections/module/{cat_id}?sl=JSL"
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+        except:
+            print("WEBページへのアクセスに失敗しました。")
+            sys.exit(1)
 
-    if not next_data:
-        print("手話リストが見つかりませんでした")
-        sys.exit(1)
+        soup = BeautifulSoup(response.text, "html.parser")
+        next_data = soup.find("script", id="__NEXT_DATA__")
 
-    jsondata = json.loads(next_data.string)
+        if not next_data:
+            print("手話リストが見つかりませんでした")
+            sys.exit(1)
+
+        jsondata = json.loads(next_data.string)
+
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(jsondata, f, ensure_ascii=False, indent=2)
+
     signs = jsondata["props"]["pageProps"]["moduleData"]["signList"]
     return signs
 
@@ -79,10 +101,61 @@ def get_signs(cats: list) -> list:
     return signs
 
 
-def download_video(url, filename):
-    filepath = f"{MEDIA_PATH}/{filename}"
+def get_ffmpeg_exe():
+    global config
+    if config["ffmpeg_exe"]:
+        return config["ffmpeg_exe"]
 
-    if os.path.exists(filepath):
+    # Prefer system-installed ffmpeg
+    try:
+        system_ffmpeg = shutil.which("ffmpeg")
+    except Exception:
+        system_ffmpeg = None
+
+    if system_ffmpeg:
+        config["ffmpeg_exe"] = system_ffmpeg
+        return config["ffmpeg_exe"]
+
+    # Fall back to imageio-ffmpeg
+    config["ffmpeg_exe"] = imageio_ffmpeg.get_ffmpeg_exe()
+    return config["ffmpeg_exe"]
+
+
+def download_video(url, video_path):
+    if os.path.exists(video_path):
+        return
+
+    try:
+        with open(video_path, "wb") as f:
+            curl = pycurl.Curl()
+            curl.setopt(curl.URL, url)
+            curl.setopt(curl.WRITEDATA, f)
+            curl.setopt(curl.NOPROGRESS, False)
+            curl.setopt(curl.XFERINFOFUNCTION, lambda dltotal, dlnow, ultotal, ulnow: None)
+            curl.perform()
+            curl.close()
+    except KeyboardInterrupt:
+        print("ダウンロードを中断しています...")
+        if os.path.exists(video_path):
+            os.remove(video_path)
+        sys.exit(1)
+    except pycurl.error as e:
+        print(f"ダウンロードできませんでした。: {e}")
+        if os.path.exists(video_path):
+            os.remove(video_path)
+    except Exception as e:
+        print(f"ダウンロードできませんでした。: {e}")
+        if os.path.exists(video_path):
+            os.remove(video_path)
+
+
+def convert_to_mp4(input_path, output_path):
+    ffmpeg_exe = get_ffmpeg_exe()
+
+    if not os.path.exists(input_path):
+        return
+
+    if os.path.exists(output_path):
         return
 
     cmd = [
@@ -108,13 +181,6 @@ def download_video(url, filename):
 
 def load_templates():
     template_path = os.path.join(os.path.dirname(__file__), "templates")
-    filenames = [
-        "style.css",
-        "ja2jsl_front.template.anki",
-        "ja2jsl_back.template.anki",
-        "jsl2ja_front.template.anki",
-        "jsl2ja_back.template.anki",
-    ]
     
     templates = {}
     for filename in filenames:
@@ -125,7 +191,6 @@ def load_templates():
 
     return templates
 
-
 def create_notes(signs: list) -> list[dict]:
     notes = []
 
@@ -133,6 +198,18 @@ def create_notes(signs: list) -> list[dict]:
         note_id     = sign["id"]
         definition  = sign["signDefinitions"]["ja"][0]["def"]
         position    = sign["signDefinitions"]["ja"][0]["pos"]
+        rawvideo    = f"{note_id}.raw.mp4"
+        mp4_file    = f"{note_id}.mp4"
+        webm_file   = f"{note_id}.webm"
+        video_file  = rawvideo
+
+        if config["should_convert"] and config["format"] == "mp4":
+            video_file = mp4_file
+        elif config["should_convert"] and config["format"] == "webm":
+            video_file = webm_file
+
+        # image_file  = f"{note_id}.gif"
+        image_file  = f"{note_id}.webp"
         video_url   = sign["defaultVideoUrl"]
         page_url    = f"https://handbook.sign.town/ja/signs/{note_id}?sl=JSL"
         category    = sign["category"]
@@ -146,6 +223,9 @@ def create_notes(signs: list) -> list[dict]:
             "id":  note_id,
             "def": definition,
             "pos": position,
+            "rawvideo_file": rawvideo,
+            "mp4_file": mp4_file,
+            "webm_file": webm_file,
             "video": video_file,
             "video_url": video_url,
             "page_url": page_url,
@@ -155,10 +235,30 @@ def create_notes(signs: list) -> list[dict]:
     return notes
 
 
-def write_in_apkg(notes: list):
-    templates = load_templates()
+def create_video_model() -> genanki.Model:
+    filenames = [
+        "style.css",
+        "ja-jsl_video_front.template.anki",
+        "ja-jsl_video_back.template.anki",
+        "jsl-ja_video_front.template.anki",
+        "jsl-ja_video_back.template.anki",
+    ]
+    template_files = load_templates(filenames)
     model_id = random.randrange(1 << 30, 1 << 31)
-    
+    templates = []
+
+    if config["template"] in ["ja-jsl", "all"]:
+        templates.append({
+            "name": "JA->JSL",
+            "qfmt": template_files["ja-jsl_video_front"],
+            "afmt": template_files["ja-jsl_video_back"],
+        })
+    if config["template"] in ["jsl-ja", "all"]:
+        templates.append({
+            "name": "JSL->JA",
+            "qfmt": template_files["jsl-ja_video_front"],
+            "afmt": template_files["jsl-ja_video_back"],
+        })
     model = genanki.Model(
         model_id,
         "JSL",
@@ -183,7 +283,8 @@ def write_in_apkg(notes: list):
                 "afmt": templates["jsl2ja_back"],
             },
         ],
-        css=templates["style"],
+        templates=templates,
+        css=template_files["style"],
     )
 
     decks = {}
@@ -230,7 +331,9 @@ def main(**kwargs):
     print("各カテゴリの手話一覧を読み込んでいます...")
     signs = get_signs(cats)
     notes = create_notes(signs)
-    write_in_apkg(notes)
+    media = make_media(notes)
+    print("Ankiパッケージを生成しています...")
+    write_in_apkg(notes, media, cats)
 
 if __name__ == "__main__":
     main()
