@@ -96,7 +96,7 @@ def download_video(url, filename):
         filepath
     ]
     try:
-        subprocess.run(cmd)
+        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except FileNotFoundError:
         print("コマンドがありません。: ffmpeg")
         sys.exit(1)
