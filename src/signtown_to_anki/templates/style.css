@@ -201,7 +201,7 @@ b {
 
   font-weight: 500;
   font-size: var(--font-size-card);
-  font-family: "Line", sans-serif;
+  font-family: sans-serif;
   color: var(--color-text-primary);
 }
 
@@ -241,7 +241,6 @@ b {
 
 img {
   object-fit: contain;
-  aspect-ratio: 16 / 9;
   width: 100%;
   border-radius: 6px;
 }
@@ -329,20 +328,4 @@ hr {
 
 .hidden {
   display: none;
-}
-
-@font-face {
-  font-family: Line;
-  src: url("_line_th.ttf");
-  font-weight: 400;
-}
-@font-face {
-  font-family: Line;
-  src: url("_line_rg.ttf");
-  font-weight: 500;
-}
-@font-face {
-  font-family: Line;
-  src: url("_line_bd.ttf");
-  font-weight: 600;
 }

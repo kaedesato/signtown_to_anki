@@ -1,0 +1,7 @@
+<div class="pane">
+  <div class="section">
+    <div class="word">
+      <span>{{def}}</span>
+    </div>
+  </div>
+</div>

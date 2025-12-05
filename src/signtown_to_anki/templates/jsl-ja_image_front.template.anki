@@ -1,0 +1,14 @@
+<div class="pane">
+  <div class="section">
+    {{^image}}
+    <div class="center">
+      <video src="{{video_url}}" controls autoplay loop></video>
+    </div>
+    {{/image}}
+    {{#image}}
+    <div class="center">
+      {{image}}
+    </div>
+    {{/image}}
+  </div>
+</div>
