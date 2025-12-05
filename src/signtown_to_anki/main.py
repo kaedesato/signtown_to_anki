@@ -146,7 +146,6 @@ def create_notes(signs: list) -> list[dict]:
             "def": definition,
             "pos": position,
             "video": video_file,
-            "video_tag": f"[sound:{video_file}]",
             "video_url": video_url,
             "page_url": page_url,
             "category": category
@@ -167,7 +166,6 @@ def write_in_apkg(notes: list):
             {"name": "def"},
             {"name": "pos"},
             {"name": "video"},
-            {"name": "video_tag"},
             {"name": "video_url"},
             {"name": "page_url"},
             {"name": "category"},
