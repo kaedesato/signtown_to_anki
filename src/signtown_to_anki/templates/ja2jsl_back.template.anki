@@ -13,7 +13,7 @@
     {{/video}}
     {{#video}}
     <div class="center">
-      <video src="{{video}}" controls autoplay loop></video>
+      <img src="{{video}}">
     </div>
     {{/video}}
   </div>
