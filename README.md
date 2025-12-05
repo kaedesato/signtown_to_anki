@@ -20,7 +20,7 @@ uv tool install git+https://github.com/mootah/signtown_to_anki
 
 ## 使い方
 
-## ヘルプ
+### ヘルプ
 
 ```zsh
 signtown-to-anki --help
@@ -62,7 +62,6 @@ signtown-to-anki --no-conversion
 ```zsh
 signtown-to-anki --format webm
 ```
-
 
 ### テンプレートを選択する
 
