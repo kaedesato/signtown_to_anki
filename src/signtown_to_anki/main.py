@@ -194,7 +194,12 @@ def write_in_apkg(notes: list):
             deck_name = f"手話タウンハンドブック::{category}"
             decks[category] = genanki.Deck(deck_id, deck_name)
 
-        note = genanki.Note(model=model, fields=list(n.values()))
+        # 変更点: videoフィールド（インデックス3）がある場合、<img>タグで囲む
+        fields = list(n.values())
+        if fields[3]:
+            fields[3] = f'<img src="{fields[3]}">'
+
+        note = genanki.Note(model=model, fields=fields)
         decks[category].add_note(note)
 
     package = genanki.Package(list(decks.values()))
