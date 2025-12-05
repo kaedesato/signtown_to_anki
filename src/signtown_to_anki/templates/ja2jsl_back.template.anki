@@ -13,7 +13,7 @@
     {{/video}}
     {{#video}}
     <div class="center">
-      <img src="{{video}}">
+      {{video}}
     </div>
     {{/video}}
   </div>
