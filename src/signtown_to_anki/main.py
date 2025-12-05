@@ -1,4 +1,5 @@
 import os, sys, json, random, time, subprocess
+import concurrent.futures
 import requests
 from bs4 import BeautifulSoup
 import genanki
@@ -7,7 +8,6 @@ from rich.progress import track
 import rich_click as click
 
 DOWNLOAD = True
-FFMPEG = True
 MEDIA_PATH = "collection.media"
 
 def read(file_path: str) -> str:
@@ -85,35 +85,25 @@ def download_video(url, filename):
     if os.path.exists(filepath):
         return
 
-    if FFMPEG:
-        cmd = [
-            "ffmpeg", "-i", url,
-            "-vcodec", "libx264",
-            "-crf", "28",
-            "-preset", "veryfast",
-            "-an",
-            "-loglevel", "error",
-            filepath
-        ]
-        try:
-            subprocess.run(cmd)
-        except FileNotFoundError:
-            print("コマンドがありません。: ffmpeg")
-            sys.exit(1)
-        except Exception as e:
-            print(e)
-            sys.exit(1)
-    else:
-        try:
-            response = requests.get(url, stream=True)
-            response.raise_for_status()
-
-            with open(filepath, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    if chunk:
-                        f.write(chunk)
-        except requests.exceptions.RequestException as e:
-            print(f"ダウンロードできませんでした。: {e}")
+    cmd = [
+        "ffmpeg", "-i", url,
+        "-vcodec", "libsvtav1",
+        "-crf", "24",
+        "-b:v", "0",
+        "-preset", "12",
+        "-pix_fmt", "yuv420p",
+        "-an",
+        "-loglevel", "error",
+        filepath
+    ]
+    try:
+        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except FileNotFoundError:
+        print("コマンドがありません。: ffmpeg")
+        sys.exit(1)
+    except Exception as e:
+        print(e)
+        sys.exit(1)
 
 
 def load_templates():
@@ -150,14 +140,13 @@ def create_notes(signs: list) -> list[dict]:
         
         video_file = ""
         if DOWNLOAD:
-            video_file = f"{note_id}.mp4"
+            video_file = f"{note_id}.avif"
 
         notes.append({
             "id":  note_id,
             "def": definition,
             "pos": position,
             "video": video_file,
-            "video_tag": f"[sound:{video_file}]",
             "video_url": video_url,
             "page_url": page_url,
             "category": category
@@ -178,22 +167,21 @@ def write_in_apkg(notes: list):
             {"name": "def"},
             {"name": "pos"},
             {"name": "video"},
-            {"name": "video_tag"},
             {"name": "video_url"},
             {"name": "page_url"},
             {"name": "category"},
         ],
         templates=[
-            {
-                "name": "JA->JSL",
-                "qfmt": templates["ja2jsl_front"],
-                "afmt": templates["ja2jsl_back"],
-            },
             # {
-            #     "name": "JSL->JA",
-            #     "qfmt": templates["jsl2ja_front"],
-            #     "afmt": templates["jsl2ja_back"],
+            #     "name": "JA->JSL",
+            #     "qfmt": templates["ja2jsl_front"],
+            #     "afmt": templates["ja2jsl_back"],
             # },
+            {
+                "name": "JSL->JA",
+                "qfmt": templates["jsl2ja_front"],
+                "afmt": templates["jsl2ja_back"],
+            },
         ],
         css=templates["style"],
     )
@@ -215,12 +203,13 @@ def write_in_apkg(notes: list):
         media = []
         os.makedirs(MEDIA_PATH, exist_ok=True)
         print("動画をダウンロードしています...")
-        for n in track(notes):
-            time.sleep(0.2)
 
+        def download_task(n):
             download_video(n["video_url"], n["video"])
-            filepath = f"{MEDIA_PATH}/{n["video"]}"
-            media.append(filepath)
+            return f"{MEDIA_PATH}/{n['video']}"
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            media = list(track(executor.map(download_task, notes), total=len(notes)))
 
         package.media_files = media
 
@@ -232,13 +221,9 @@ def write_in_apkg(notes: list):
 @click.command(help="handbook.sign.townをスクレイピングしてAnkiパッケージを作るコマンド")
 @click.option("--no-download", is_flag=True,
     help="動画をDLしません")
-@click.option("--without-ffmpeg", is_flag=True,
-    help="動画のDLにffmpegを使用しません")
 def main(**kwargs):
     global DOWNLOAD
     DOWNLOAD = not kwargs["no_download"]
-    global FFMPEG
-    FFMPEG = not kwargs["without_ffmpeg"]
 
     print("カテゴリ一覧を読み込んでいます...")
     cats = get_categories()
