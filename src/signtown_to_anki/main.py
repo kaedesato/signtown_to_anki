@@ -92,7 +92,6 @@ def download_video(url, filename):
         "-b:v", "0",
         "-cpu-used", "2",
         "-row-mt", "1",
-        "-deadline", "best", 
         "-an",
         "-loglevel", "error",
         filepath
