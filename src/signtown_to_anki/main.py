@@ -7,7 +7,6 @@ from rich.progress import track
 import rich_click as click
 
 DOWNLOAD = True
-FFMPEG = True
 MEDIA_PATH = "collection.media"
 
 def read(file_path: str) -> str:
@@ -85,35 +84,24 @@ def download_video(url, filename):
     if os.path.exists(filepath):
         return
 
-    if FFMPEG:
-        cmd = [
-            "ffmpeg", "-i", url,
-            "-vcodec", "libx264",
-            "-crf", "28",
-            "-preset", "veryfast",
-            "-an",
-            "-loglevel", "error",
-            filepath
-        ]
-        try:
-            subprocess.run(cmd)
-        except FileNotFoundError:
-            print("コマンドがありません。: ffmpeg")
-            sys.exit(1)
-        except Exception as e:
-            print(e)
-            sys.exit(1)
-    else:
-        try:
-            response = requests.get(url, stream=True)
-            response.raise_for_status()
-
-            with open(filepath, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    if chunk:
-                        f.write(chunk)
-        except requests.exceptions.RequestException as e:
-            print(f"ダウンロードできませんでした。: {e}")
+    cmd = [
+        "ffmpeg", "-i", url,
+        "-vcodec", "libvpx-vp9",
+        "-crf", "30",
+        "-b:v", "0",
+        "-cpu-used", "4",
+        "-an",
+        "-loglevel", "error",
+        filepath
+    ]
+    try:
+        subprocess.run(cmd)
+    except FileNotFoundError:
+        print("コマンドがありません。: ffmpeg")
+        sys.exit(1)
+    except Exception as e:
+        print(e)
+        sys.exit(1)
 
 
 def load_templates():
@@ -150,7 +138,7 @@ def create_notes(signs: list) -> list[dict]:
         
         video_file = ""
         if DOWNLOAD:
-            video_file = f"{note_id}.mp4"
+            video_file = f"{note_id}.webm"
 
         notes.append({
             "id":  note_id,
@@ -232,13 +220,9 @@ def write_in_apkg(notes: list):
 @click.command(help="handbook.sign.townをスクレイピングしてAnkiパッケージを作るコマンド")
 @click.option("--no-download", is_flag=True,
     help="動画をDLしません")
-@click.option("--without-ffmpeg", is_flag=True,
-    help="動画のDLにffmpegを使用しません")
 def main(**kwargs):
     global DOWNLOAD
     DOWNLOAD = not kwargs["no_download"]
-    global FFMPEG
-    FFMPEG = not kwargs["without_ffmpeg"]
 
     print("カテゴリ一覧を読み込んでいます...")
     cats = get_categories()
