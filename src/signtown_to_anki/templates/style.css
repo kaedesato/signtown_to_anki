@@ -245,6 +245,12 @@ img {
   border-radius: 6px;
 }
 
+video {
+  object-fit: contain;
+  width: 100%;
+  border-radius: 6px;
+}
+
 .buttonGroup {
   align-self: stretch;
   display: grid;
