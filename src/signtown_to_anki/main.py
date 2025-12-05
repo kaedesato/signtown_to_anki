@@ -88,9 +88,9 @@ def download_video(url, filename):
     cmd = [
         "ffmpeg", "-i", url,
         "-vcodec", "libsvtav1",
-        "-crf", "24",
+        "-crf", "22",
         "-b:v", "0",
-        "-preset", "6",
+        "-preset", "4",
         "-pix_fmt", "yuv420p",
         "-an",
         "-loglevel", "error",
@@ -208,7 +208,7 @@ def write_in_apkg(notes: list):
             download_video(n["video_url"], n["video"])
             return f"{MEDIA_PATH}/{n['video']}"
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=12) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
             media = list(track(executor.map(download_task, notes), total=len(notes)))
 
         package.media_files = media
