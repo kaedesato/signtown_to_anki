@@ -88,7 +88,7 @@ def download_video(url, filename):
     cmd = [
         "ffmpeg", "-i", url,
         "-vcodec", "libsvtav1",
-        "-crf", "50",
+        "-crf", "63",
         "-b:v", "0",
         "-preset", "12",
         "-an",
@@ -139,7 +139,7 @@ def create_notes(signs: list) -> list[dict]:
         
         video_file = ""
         if DOWNLOAD:
-            video_file = f"{note_id}.webm"
+            video_file = f"{note_id}.avif"
 
         notes.append({
             "id":  note_id,
